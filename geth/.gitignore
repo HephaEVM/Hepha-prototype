@@ -1,0 +1,17 @@
+/bin/
+/results/
+/cache/
+/data/
+/datasets/
+*.so
+*.dylib
+*.a
+*.test
+*.prof
+*.pprof
+*.log
+__pycache__/
+.DS_Store
+.env
+*.pem
+*.key

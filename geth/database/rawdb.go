@@ -1,0 +1,72 @@
+package database
+
+import (
+	"fmt"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"go-eth1.16.5-evm/core/rawdb"
+	"go-eth1.16.5-evm/core/types"
+	"go-eth1.16.5-evm/ethdb"
+	"go-eth1.16.5-evm/ethdb/pebble"
+)
+
+// OpenDatabase is not ancient db
+func OpenDatabase(pebbleConfig *PebbleConfig) (ethdb.Database, error) {
+	fmt.Println("pebbleConfig:", pebbleConfig.File)
+	db, err := pebble.New(pebbleConfig.File, pebbleConfig.Cache, pebbleConfig.Handles, pebbleConfig.Namespace, pebbleConfig.Readonly)
+	if err != nil {
+		return nil, err
+	}
+
+	return rawdb.NewDatabase(db), nil
+}
+
+func OpenDatabaseWithFreezer(pebbleConfig *PebbleConfig, rawConfig *RawConfig) (ethdb.Database, error) {
+	db, err := pebble.New(pebbleConfig.File, pebbleConfig.Cache, pebbleConfig.Handles, pebbleConfig.Namespace, pebbleConfig.Readonly)
+	if err != nil {
+		return nil, err
+	}
+
+	frdb, err := rawdb.Open(db, rawdb.OpenOptions{
+		Ancient:          rawConfig.Ancient,
+		Era:              rawConfig.Era,
+		MetricsNamespace: rawConfig.MetricsNamespace,
+		ReadOnly:         rawConfig.ReadOnly,
+	})
+	return frdb, err
+}
+
+func GetBlockByNumber(db ethdb.Database, number *big.Int) (*types.Block, error) {
+	var (
+		block *types.Block
+		err   error
+	)
+	hash := rawdb.ReadCanonicalHash(db, number.Uint64())
+	if (hash != common.Hash{}) {
+		block = rawdb.ReadBlock(db, hash, number.Uint64())
+		if block == nil {
+			err = fmt.Errorf("read block(%s) error! block is nil", number)
+		}
+	} else {
+		err = fmt.Errorf("read block(%s) error! hash is nil", number)
+	}
+	return block, err
+}
+
+func GetHeaderByNumber(db ethdb.Database, number *big.Int) (*types.Header, error) {
+	var (
+		header *types.Header = nil
+		err    error         = nil
+	)
+
+	hash := rawdb.ReadCanonicalHash(db, number.Uint64())
+	if (hash != common.Hash{}) {
+		if h := rawdb.ReadHeader(db, hash, number.Uint64()); h != nil {
+			header = h
+		} else {
+			err = fmt.Errorf("create stateDB error! header is nil")
+		}
+	}
+	return header, err
+}

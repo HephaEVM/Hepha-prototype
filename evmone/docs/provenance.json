@@ -1,0 +1,10 @@
+{
+  "upstream": "evmone v0.25.0",
+  "commit": "e675712b0ce3c908f873dcc4e8944efbaedd0d07",
+  "dependencies": {
+    "intx": "0.15.0",
+    "json": "3.11.3",
+    "blst": "0.3.17"
+  },
+  "scope": "Portable Full semantic-region backend and progressive cold binding. Platform-specific historical LD_PRELOAD/layout experiments are not included. Raw timing is freshly measured; historical plotted values are not bundled."
+}

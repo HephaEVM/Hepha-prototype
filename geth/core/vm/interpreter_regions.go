@@ -1,0 +1,306 @@
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+package vm
+
+import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/holiman/uint256"
+	"time"
+)
+
+func (evm *EVM) runPrunedRegions(contract *Contract, input []byte, readOnly bool) ([]byte, error, time.Duration) {
+	return evm.runPreparedRegions(contract, input, readOnly, nil)
+}
+func (evm *EVM) runPreparedRegions(contract *Contract, input []byte, readOnly bool, prepared *abiExecutionPlan) (ret []byte, err error, latency time.Duration) {
+	// Increment the call depth which is restricted to 1024
+	evm.depth++
+	defer func() { evm.depth-- }()
+
+	// Make sure the readOnly is only set if we aren't in readOnly yet.
+	// This also makes sure that the readOnly flag isn't removed for child calls.
+	if readOnly && !evm.readOnly {
+		evm.readOnly = true
+		defer func() { evm.readOnly = false }()
+	}
+
+	// Reset the previous call's return data. It's unimportant to preserve the old buffer
+	// as every returning call will return new data anyway.
+	evm.returnData = nil
+
+	// Don't bother with the execution if there's no code.
+	if len(contract.Code) == 0 {
+		return nil, nil, 0
+	}
+
+	var (
+		op          OpCode     // current opcode
+		jumpTable   *JumpTable = evm.table
+		mem                    = NewMemory() // bound memory
+		stack                  = newstack()  // local stack
+		callContext            = &ScopeContext{
+			Memory:   mem,
+			Stack:    stack,
+			Contract: contract,
+		}
+		// For optimisation reason we're using uint64 as the program counter.
+		// It's theoretically possible to go above 2^64. The YP defines the PC
+		// to be uint256. Practically much less so feasible.
+		pc   = uint64(0) // program counter
+		cost uint64
+		res  []byte
+	)
+
+	// Don't move this deferred function, it's placed before the OnOpcode-deferred method,
+	// so that it gets executed _after_: the OnOpcode needs the stacks before
+	// they are returned to the pools
+	defer func() {
+		returnStack(stack)
+		mem.Free()
+	}()
+	contract.Input = input
+	var boundArithmetic *boundArithmetic
+	var abiBound *abiScalarBound
+	if prepared != nil {
+		boundArithmetic, abiBound = prepared.arithmetic, prepared.abi
+	} else {
+		boundArithmetic, abiBound = evm.abiPolicyExecutionBinding(contract)
+	}
+
+	var arithmetic *arithmeticFrame
+	dispatchCode := contract.Code
+	if boundArithmetic != nil {
+		dispatchCode = boundArithmetic.dispatchCode
+		contract.analysis = boundArithmetic.bitmap
+		defer func() {
+			if arithmetic == nil {
+				return
+			}
+			defer releaseArithmeticFrame(arithmetic)
+			if failure := arithmetic.finishSynchronous(); failure != nil {
+				contract.Gas = failure.gas
+				ret, err = failure.data, failure.err
+				evm.returnData = failure.data
+			}
+		}()
+	}
+	if abiBound != nil {
+		dispatchCode = abiBound.view
+	}
+	// The Interpreter main run loop (contextual). This loop runs until either an
+	// explicit STOP, RETURN or SELFDESTRUCT is executed, an error occurred during
+	// the execution of one of the operations or until the done flag is set by the
+	// parent context.
+	_ = jumpTable[0] // nil-check the jumpTable out of the loop
+
+	now := time.Now()
+	if timing := evm.Config.LoopTiming; timing != nil && evm.depth == 1 {
+		// Registered after frame-cleanup defers: early returns are measured before
+		// cleanup, matching the normal lat boundary below. Normal paths reuse lat.
+		defer func() {
+			elapsed := latency
+			if elapsed == 0 {
+				elapsed = time.Since(now)
+				timing.EarlyExits++
+			}
+			timing.Nanoseconds += elapsed.Nanoseconds()
+			timing.Runs++
+			if contract.IsDeployment {
+				timing.CreationRuns++
+			} else {
+				// Reproduce the pre-existing top-level Call accumulator as well.
+				timing.LegacyCallMicros += latency.Microseconds()
+			}
+		}()
+	}
+
+	useSpan := evm.Config.StreamRegions != nil && jumpTable == stackSpanRules && evm.Config.Tracer == nil && len(evm.Config.ExtraEips) == 0
+	for {
+		// Get the operation from the jump table and validate the stack to ensure there are
+		// enough stack items available to perform the operation.
+		op = STOP
+		if pc < uint64(len(dispatchCode)) {
+			op = OpCode(dispatchCode[pc])
+		}
+		// Keep entry handling outside the ordinary instruction loop. The
+		// handler preserves the original proof checks, gas, and fallback path.
+		if op == abiScalarMarker || op == arithmeticEntryMarker {
+			skipped, failure := evm.tryOutlinedDemandEntry(op, &pc, callContext, boundArithmetic, abiBound, &arithmetic)
+			if failure != nil {
+				return nil, failure.err, 0
+			}
+			if skipped {
+				continue
+			}
+			op = contract.GetOp(pc)
+		}
+
+		// Common residue between bound regions. Only consume supported fixed-cost ops;
+		// all exceptional cases enter the ordinary interpreter at their original PC.
+		if useSpan {
+			if stackSpanStart[op] {
+				if end, ok := executeStackSpan(evm, contract, stack, dispatchCode, pc); ok {
+					pc = end
+					continue
+				}
+			}
+		} else if op >= PUSH1 && op <= SWAP16 {
+			entry := jumpTable[op]
+			depth := len(stack.data)
+			if depth >= entry.minStack && depth <= entry.maxStack && contract.Gas >= entry.constantGas {
+				switch {
+				case op <= PUSH32:
+					width := uint64(op-PUSH1) + 1
+					next := pc + width + 1
+					if next > uint64(len(contract.Code)) {
+						break
+					}
+					arg := contract.Code[pc+1 : next]
+					// A short literal followed by an unpatched branch can remain in a register.
+					if width <= 2 && next < uint64(len(dispatchCode)) {
+						branch := OpCode(dispatchCode[next])
+						if (branch == JUMP || branch == JUMPI && depth > 0) && !evm.abort.Load() {
+							left := contract.Gas - entry.constantGas
+							branchCost := jumpTable[branch].constantGas
+							if left >= branchCost {
+								taken := branch == JUMP || !stack.data[depth-1].IsZero()
+								dest := uint64(arg[0])
+								if width == 2 {
+									dest = dest<<8 | uint64(arg[1])
+								}
+								if !taken || dest < uint64(len(contract.Code)) && OpCode(contract.Code[dest]) == JUMPDEST && contract.isCode(dest) {
+									if branch == JUMPI {
+										stack.data = stack.data[:depth-1]
+									}
+									contract.Gas = left - branchCost
+									pc = next + 1
+									if taken {
+										pc = dest
+									}
+									if paperCountInstructions {
+										paperInterpreted += 2
+									}
+									continue
+								}
+							}
+						}
+					}
+					var literal uint256.Int
+					switch width {
+					case 1:
+						literal.SetUint64(uint64(arg[0]))
+					case 2:
+						literal.SetBytes2(arg)
+					default:
+						literal.SetBytes(arg)
+					}
+					stack.push(&literal)
+					contract.Gas -= entry.constantGas
+					pc = next
+					if paperCountInstructions {
+						paperInterpreted++
+					}
+					continue
+				case op <= DUP16:
+					stack.dup(int(op-DUP1) + 1)
+				default:
+					i := depth - 2 - int(op-SWAP1)
+					stack.data[depth-1], stack.data[i] = stack.data[i], stack.data[depth-1]
+				}
+				if op >= DUP1 {
+					contract.Gas -= entry.constantGas
+					pc++
+					if paperCountInstructions {
+						paperInterpreted++
+					}
+					continue
+				}
+			}
+		}
+
+		if paperCountInstructions {
+			paperInterpreted++
+		}
+		operation := jumpTable[op]
+		cost = operation.constantGas // For tracing
+		// Validate stack
+		if sLen := stack.len(); sLen < operation.minStack {
+			return nil, &ErrStackUnderflow{stackLen: sLen, required: operation.minStack}, 0
+		} else if sLen > operation.maxStack {
+			return nil, &ErrStackOverflow{stackLen: sLen, limit: operation.maxStack}, 0
+		}
+		// for tracing: this gas consumption event is emitted below in the debug section.
+		if contract.Gas < cost {
+			return nil, ErrOutOfGas, 0
+		} else {
+			contract.Gas -= cost
+		}
+
+		// All ops with a dynamic memory usage also has a dynamic gas cost.
+		var memorySize uint64
+		if operation.dynamicGas != nil {
+			// calculate the new memory size and expand the memory to fit
+			// the operation
+			// Memory check needs to be done prior to evaluating the dynamic gas portion,
+			// to detect calculation overflows
+			if operation.memorySize != nil {
+				memSize, overflow := operation.memorySize(stack)
+				if overflow {
+					return nil, ErrGasUintOverflow, 0
+				}
+				// memory is expanded in words of 32 bytes. Gas
+				// is also calculated in words.
+				if memorySize, overflow = math.SafeMul(toWordSize(memSize), 32); overflow {
+					return nil, ErrGasUintOverflow, 0
+				}
+			}
+			// Consume the gas and return an error if not enough gas is available.
+			// cost is explicitly set so that the capture state defer method can get the proper cost
+			var dynamicCost uint64
+			dynamicCost, err = operation.dynamicGas(evm, contract, stack, mem, memorySize)
+			cost += dynamicCost // for tracing
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrOutOfGas, err), 0
+			}
+			// for tracing: this gas consumption event is emitted below in the debug section.
+			if contract.Gas < dynamicCost {
+				return nil, ErrOutOfGas, 0
+			} else {
+				contract.Gas -= dynamicCost
+			}
+		}
+
+		if memorySize > 0 {
+			mem.Resize(memorySize)
+		}
+
+		// execute the operation
+		res, err = operation.execute(&pc, evm, callContext)
+		if err != nil {
+			break
+		}
+
+		pc++
+	}
+	lat := time.Since(now)
+
+	if err == errStopToken {
+		err = nil // clear stop token error
+	}
+
+	return res, err, lat
+}

@@ -1,0 +1,4 @@
+[
+  {"name":"erc20-mint-normal","method":"mint","args":["0x0000000000000000000000000000000000000001","100"]},
+  {"name":"erc20-mint-max","method":"mint","args":["0x0000000000000000000000000000000000000001","0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"]}
+]

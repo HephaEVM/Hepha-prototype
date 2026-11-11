@@ -1,0 +1,12 @@
+{
+  "start": 23400001,
+  "end": 23401000,
+  "transactions": 226031,
+  "chainID": 1,
+  "chainDirectory": "chaindata",
+  "stateDirectory": "state",
+  "stateScheme": "hash",
+  "parentBlockHash": "0x91f74cc48392039b9db99a47fd0dbee28cae2ac92ad685b0a80135f41ac0ae05",
+  "parentStateRoot": "0xab955667a17523870dde8dc14fa6bf4456252e480c8a61d0c2a701a6bf6caca5",
+  "scope": "original deployed code, all transactions; not a general-purpose full-node state; original gas"
+}

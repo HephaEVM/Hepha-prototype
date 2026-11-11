@@ -1,0 +1,12 @@
+[
+  {"name":"add-normal","method":"add","args":["7","9"]},
+  {"name":"add-overflow","method":"add","args":["0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","1"]},
+  {"name":"sub-normal","method":"sub","args":["9","7"]},
+  {"name":"sub-underflow","method":"sub","args":["0","1"]},
+  {"name":"mul-normal","method":"mul","args":["7","9"]},
+  {"name":"mul-zero","method":"mul","args":["0","0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"]},
+  {"name":"mul-overflow","method":"mul","args":["0x100000000000000000000000000000000","0x100000000000000000000000000000000"]},
+  {"name":"same-value-alias","method":"twice","args":["7"]},
+  {"name":"chained-sites","method":"chain","args":["7","9","3"]},
+  {"name":"unchecked-negative-control","method":"uncheckedAdd","args":["0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","1"]}
+]

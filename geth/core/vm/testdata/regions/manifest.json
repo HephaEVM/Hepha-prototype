@@ -1,0 +1,37 @@
+[
+  {
+    "source": "tools/arithmetic-runtime/output/abi-scalar-20261020/static-v2/templates.json",
+    "path": "tools/arithmetic-runtime/libraries/abi-scalar.json",
+    "sha256": "d80fdb5b52514189ce06d9a133215e2e5141eac1f6c8ca8a76ff250803985ebf"
+  },
+  {
+    "source": "tools/arithmetic-runtime/output/abi-regions-20261020/static/templates.json",
+    "path": "tools/arithmetic-runtime/libraries/abi-regions.json",
+    "sha256": "f0f61659069c355be13b222e5c0e68f63883d933bd1eff0fa3e196fa05f19fbe"
+  },
+  {
+    "source": "tools/arithmetic-runtime/output/helper-opportunities-20261020/abi-expanded-templates.json",
+    "path": "tools/arithmetic-runtime/libraries/abi-expanded.json",
+    "sha256": "2fe893ec1b7a3e4a61e8c12b08992ec5f67075bf68656057769adabef5c0824f"
+  },
+  {
+    "source": "tools/arithmetic-runtime/output/effect-chain-20261025/trace/bytecode/0x4e36f96ee1667a663dfaac57c4d185a0e369a3a217e0079d49620f34f85d1ac7.hex",
+    "path": "core/vm/testdata/regions/fusion-boundary.hex",
+    "sha256": "7b01e3477625de5b65eb323a2b4971e9cd3f2358fe582bc6af9beda446de9914"
+  },
+  {
+    "source": "tools/template-miner/output-mainnet-extended-census-100/bytecode/0x52693c83cb9f3adad533fb1a6a4e2d222472d6c958f211d3b4d9b229d304a9db.hex",
+    "path": "core/vm/testdata/regions/0x52693c83cb9f3adad533fb1a6a4e2d222472d6c958f211d3b4d9b229d304a9db.hex",
+    "sha256": "0b0a8a2713bafa992216fac4eacd69b6d9873ef76ed494a103c07e96876e7040"
+  },
+  {
+    "source": "tools/template-miner/output-mainnet-extended-census-100/bytecode/0xfa8807899571ad619b60cd5d589160602b93b98dc3da870589bea4136582dcbe.hex",
+    "path": "core/vm/testdata/regions/0xfa8807899571ad619b60cd5d589160602b93b98dc3da870589bea4136582dcbe.hex",
+    "sha256": "025f2af279283030d04c4c660c8278c5be338a65fa7c8a5bef50f834e684f494"
+  },
+  {
+    "source": "tools/template-miner/output-mainnet-extended-census-100/bytecode/0xe3486cf05f2c00e00767dec63eb46d309ac8b8e4d3b870a9c13c3de4605009f9.hex",
+    "path": "core/vm/testdata/regions/0xe3486cf05f2c00e00767dec63eb46d309ac8b8e4d3b870a9c13c3de4605009f9.hex",
+    "sha256": "1a58e899b5fba3bb298295783f2e621eab47f1f78a61e619137faa40cb521a97"
+  }
+]

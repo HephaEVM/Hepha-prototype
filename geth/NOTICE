@@ -1,0 +1,16 @@
+Hepha geth research implementation
+
+This distribution contains code derived from go-ethereum v1.16.5.
+Original copyright notices and per-file license headers are retained.
+The upstream GNU General Public License and GNU Lesser General Public License
+texts are provided in COPYING and COPYING.LESSER, respectively. Refer to the
+individual file headers for their applicable terms.
+
+Third-party Go dependencies remain separate modules identified by go.mod and
+go.sum and retain their respective licenses. Compiler fixture artifacts and
+historical runtime bytecode are included for verification and reproducibility;
+their source identifiers, metadata and any embedded notices are preserved.
+
+This package is a source extraction of the Full geth execution implementation.
+It does not include a full networking client, blockchain databases, credentials,
+prebuilt binaries, or recorded performance result sets.

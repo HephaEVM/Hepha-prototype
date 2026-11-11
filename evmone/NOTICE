@@ -1,0 +1,13 @@
+This directory contains the Hepha native region backend and reproduction tools.
+
+The pinned upstream evmone v0.25.0 sources are from commit
+e675712b0ce3c908f873dcc4e8944efbaedd0d07 and retain the Apache-2.0 license.
+regional_execution.cpp is derived from its Baseline interpreter.
+The C++ state witness driver uses the upstream evmone state host.
+
+Dependencies: intx 0.15.0 (Apache-2.0), BLST 0.3.17 (Apache-2.0),
+EVMC headers distributed with the pinned evmone tree (Apache-2.0), and
+nlohmann/json 3.11.3 (MIT). License notices are retained with their sources.
+
+Offline Go export/capture adapters operate with the sibling Geth source;
+see ../geth/COPYING, ../geth/COPYING.LESSER and ../geth/NOTICE.

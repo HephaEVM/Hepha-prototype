@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-11",
+  "platform": "macOS arm64",
+  "checks": {
+    "gethSourceIdenticalToValidatedPackage": true,
+    "gethUnchangedFiles": 531,
+    "evmoneFocusedTestsPassed": 4,
+    "nativeRegionsCompiled": 1977,
+    "fixedCallsValidated": 1,
+    "fixedMeasurementRounds": 2,
+    "fixedIterationsPerBatch": 2,
+    "streamBlocks": [
+      23400001,
+      23400002
+    ],
+    "streamTransactions": 488,
+    "streamRootFrames": 250,
+    "coldBindingsPublished": 254
+  },
+  "scope": "Packaging smoke and correctness validation only; not a new full 1000-block performance evaluation."
+}
