@@ -22,8 +22,3 @@ Download the dataset archive and its SHA-256 checksum from that release. It cove
 **1,000 mainnet blocks (23,400,001-23,401,000), 226,031 transactions**, and the
 state needed to replay this range. Extract it outside the repository and pass
 its directory with `--data`. See [dataset instructions](geth/docs/DATA.md).
-
-The root license is Apache-2.0; derived components retain their original terms,
-including Geth's GPL/LGPL licenses. See each backend's NOTICE and per-file headers.
-This artifact is an experimental execution engine, not a complete networked
-Ethereum client.
