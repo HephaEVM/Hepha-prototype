@@ -29,11 +29,9 @@ For a quick check, pass a one-call `--targets` file to capture and fixed-call
 measurement, and use `--blocks 1` for stream capture. The scripts produce fresh
 measurements; no paper figures or previous timing results are included.
 
-Cold binding publishes plans for previously observed code between blocks, with
-10 ms preparation credit. Executors are compiled before this experiment; it is
+Cold binding publishes plans for previously observed code between blocks. It is
 not an online C++ compilation benchmark. Both arms reuse a VM. State witnesses
-are restored outside root-execution timing; this is not database-backed full-node
-replay. See [measurement details](docs/EXPERIMENTS.md).
+are restored outside root-execution timing. See [measurement details](docs/EXPERIMENTS.md).
 
 Core implementation: `src/`; C++ generation: `codegen/`; offline Go adapters:
 `analysis/`. The regular `geth/` build is unchanged by these optional adapters.
