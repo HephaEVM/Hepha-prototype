@@ -25,10 +25,7 @@ python3 scripts/cold_start.py --kind fixed --blocks 1000 \
 ```
 
 Use a new output directory per experiment. For a quick check, replay one block.
-Scripts write fresh measurements and validation records; they do not render plots.
-Both methods use original deployed bytecode. EVM `lat` excludes data preload and
-explicit preparation windows; preparation time is recorded separately.
-
+Scripts write fresh measurements and validation records. Both methods use original deployed bytecode.
 - [Dataset and checksums](docs/DATA.md)
 - [Measurement details](docs/EXPERIMENTS.md)
 - [Validation](docs/VALIDATION.md)
