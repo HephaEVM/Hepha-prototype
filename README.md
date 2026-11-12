@@ -6,8 +6,8 @@ and unmet safety conditions fall back to the original interpreter.
 
 | Directory | Implementation | Experiments |
 | --- | --- | --- |
-| [`geth/`](geth/README.md) | Go backend, based on geth v1.16.5 | Warm fixed calls; cold stream and fixed-call probes |
-| [`evmone/`](evmone/README.md) | Native C++ backend, based on evmone v0.25.0 | Warm fixed calls; cold binding stream |
+| [`geth/`](geth/README.md) | Go backend, based on geth v1.16.5 | Warm fixed calls; cold fixed calls and stream |
+| [`evmone/`](evmone/README.md) | Native C++ backend, based on evmone v0.25.0 | Warm fixed calls; cold fixed calls and stream |
 
 Start with the README for the backend you want to run. Scripts produce measured
 JSON/CSV results and verify execution; no historical results or plotting inputs
