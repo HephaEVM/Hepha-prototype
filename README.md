@@ -10,8 +10,7 @@ and unmet safety conditions fall back to the original interpreter.
 | [`evmone/`](evmone/README.md) | Native C++ backend, based on evmone v0.25.0 | Warm fixed calls; cold fixed calls and stream |
 
 Start with the README for the backend you want to run. Scripts produce measured
-JSON/CSV results and verify execution; no historical results or plotting inputs
-are included. The two backends share offline semantic analysis, but execute in
+JSON/CSV results and verify execution. The two backends share offline semantic analysis, but execute in
 their own language without Go callbacks in the native C++ timed path.
 
 ## Dataset
